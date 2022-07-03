@@ -270,10 +270,10 @@ for k in range(number_of_folds):
 print(f'feature = {selected_features}, acc: {round(avg_acc/number_of_folds,2)}')
 
 
+# Random Search Algorithm (RSA) + RF classfier
 from sklearn.ensemble import RandomForestClassifier
-cv = StratifiedKFold(10)
 result = [] # Number of iterations
-N_search = 600 # Random seed initialization
+N_search = 100 # Random seed initialization
 np.random.seed(1) 
 for i in range(N_search):
     # Generate a random number of features
@@ -281,12 +281,23 @@ for i in range(N_search):
     # Given the number of features, generate features without replacement
     columns = list(np.random.choice(range(dataset_input.shape[1]), N_columns, replace=False))
 
-    clf_RF = RandomForestClassifier(n_estimators = 100)
-    scores = cross_val_score(clf_SVM,dataset_input.iloc[:,columns], dataset_label, cv=cv, scoring="accuracy", n_jobs=-1)
-    #print(np.mean(scores))
-      
-    # Store the result
-    result.append({'columns':columns,'performance':np.mean(scores)})
+    avg_acc = 0
+    for k in range(number_of_folds):
+      train_data, train_label, test_data, test_label = k_fold_cross_validation(dataset_input, dataset_label,k)
+      train_data_normalized = StandardScaler().fit_transform(train_data)
+      train_means = np.mean(train_data, axis=0)
+      train_SDs = np.std(train_data, axis=0)
+      test_data = (test_data - train_means)/train_SDs
+      train_data_transformed = train_data_normalized[:,columns]
+      test_data = test_data[:,columns]
+
+      clf_RF = RandomForestClassifier(n_estimators = 100)
+      clf_RF.fit(train_data_transformed, train_label)
+      scores = round((clf_RF.score(test_data,test_label))*100,2) 
+      avg_acc = avg_acc + scores
+    print(f'feature = {columns}, acc: {round(avg_acc/number_of_folds,2)}')
+      # Store the result
+    result.append({'columns':columns,'performance':avg_acc/number_of_folds})
 
 # Sort the result array in descending order for performance measure
 result.sort(key=lambda x : -x['performance'])
