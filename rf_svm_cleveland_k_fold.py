@@ -268,3 +268,26 @@ for k in range(number_of_folds):
   avg_acc = avg_acc + np.max(all_scores)    
 
 print(f'feature = {selected_features}, acc: {round(avg_acc/number_of_folds,2)}')
+
+
+from sklearn.ensemble import RandomForestClassifier
+cv = StratifiedKFold(10)
+result = [] # Number of iterations
+N_search = 600 # Random seed initialization
+np.random.seed(1) 
+for i in range(N_search):
+    # Generate a random number of features
+    N_columns =  list(np.random.choice(range(dataset_input.shape[1]),1)+1)
+    # Given the number of features, generate features without replacement
+    columns = list(np.random.choice(range(dataset_input.shape[1]), N_columns, replace=False))
+
+    clf_RF = RandomForestClassifier(n_estimators = 100)
+    scores = cross_val_score(clf_SVM,dataset_input.iloc[:,columns], dataset_label, cv=cv, scoring="accuracy", n_jobs=-1)
+    #print(np.mean(scores))
+      
+    # Store the result
+    result.append({'columns':columns,'performance':np.mean(scores)})
+
+# Sort the result array in descending order for performance measure
+result.sort(key=lambda x : -x['performance'])
+print(result[1])
